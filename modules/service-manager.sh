@@ -1,14 +1,13 @@
 #!/bin/bash
 # Service Manager Module
 
-show_service_status(){
-    echo "=== Service Status ==="
+show_all_services() {
+    echo "=== SERVICE STATUS ==="
     echo ""
-    
-    services=("ssh" "nginx" "xray" "dropbear" "stunnel4")
+    services=("ssh" "nginx" "xray" "mysql" "apache2")
     
     for service in "${services[@]}"; do
-        if systemctl is-active --quiet "$service"; then
+        if systemctl is-active --quiet "$service" 2>/dev/null; then
             echo "✅ $service: RUNNING"
         else
             echo "❌ $service: STOPPED"
@@ -16,20 +15,12 @@ show_service_status(){
     done
 }
 
-restart_all_services(){
-    echo "Restarting all services..."
-    systemctl restart ssh nginx xray dropbear stunnel4
-    echo "✅ Services restarted"
+restart_service() {
+    read -p "Service name: " service
+    systemctl restart "$service" 2>/dev/null && echo "$service restarted" || echo "Failed"
 }
 
-enable_on_boot(){
+enable_service() {
     read -p "Service name: " service
-    systemctl enable "$service"
-    echo "✅ $service enabled on boot"
-}
-
-disable_on_boot(){
-    read -p "Service name: " service
-    systemctl disable "$service"
-    echo "✅ $service disabled on boot"
+    systemctl enable "$service" 2>/dev/null && echo "$service enabled" || echo "Failed"
 }
