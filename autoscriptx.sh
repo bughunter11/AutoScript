@@ -757,6 +757,53 @@ uninstall_slowdns() {
     fi
 }
 
+# ---- UDP CUSTOM SERVICE ----
+manage_udp() {
+    clear
+    echo -e "${PURPLE}${BOLD}📡 UDP CUSTOM SERVICE${NC}"
+    echo -e "${BLUE}$LINE${NC}"
+
+    echo "1) Start UDP on custom port"
+    echo "2) Stop UDP service"
+    echo "3) Status"
+    echo "0) Back"
+    read -p "Choose: " udp_choice
+
+    case $udp_choice in
+        1)
+            read -p "Enter UDP Port (1-65535): " UDP_PORT
+            if [[ $UDP_PORT -lt 1 || $UDP_PORT -gt 65535 ]]; then
+                echo -e "${RED}❌ Invalid port range${NC}"
+                sleep 2
+                return
+            fi
+
+            ufw allow ${UDP_PORT}/udp >/dev/null 2>&1
+            apt install -y socat >/dev/null 2>&1
+
+            pkill -f "socat UDP-RECVFROM" >/dev/null 2>&1
+
+            nohup socat UDP-RECVFROM:${UDP_PORT},fork UDP-SENDTO:127.0.0.1:${UDP_PORT} >/dev/null 2>&1 &
+
+            echo "${UDP_PORT}" > /etc/udp_port
+            echo -e "${GREEN}✅ UDP started on port $UDP_PORT${NC}"
+            ;;
+        2)
+            pkill -f "socat UDP-RECVFROM" >/dev/null 2>&1
+            echo -e "${YELLOW}🛑 UDP service stopped${NC}"
+            ;;
+        3)
+            if pgrep -f "socat UDP-RECVFROM" >/dev/null; then
+                UPORT=$(cat /etc/udp_port 2>/dev/null || echo "?")
+                echo -e "${GREEN}🟢 Running on UDP port: $UPORT${NC}"
+            else
+                echo -e "${RED}🔴 UDP service not running${NC}"
+            fi
+            ;;
+        0) return ;;
+    esac
+    sleep 2
+}
 # ---- OTHER SERVICE MANAGERS ----
 manage_ssh() {
     clear
@@ -951,7 +998,8 @@ main_menu() {
         echo -e "${GREEN}6.${NC} Edit 101 Response"
         echo -e "${GREEN}7.${NC} Change Domain"
         echo -e "${GREEN}8.${NC} Manage Services (Including SlowDNS)"
-        echo -e "${GREEN}9.${NC} System Info"
+        echo -e "${GREEN}9.${NC} Udp Costume"
+        echo -e "${GREEN}10.${NC} System Info"
         echo -e "${CYAN}10.${NC} Install Required Services"
         echo -e "${CYAN}11.${NC} Backup System"
         echo -e "${CYAN}12.${NC} Restore Backup"
@@ -970,7 +1018,8 @@ main_menu() {
             6) edit_101_response ;;
             7) change_domain ;;
             8) manage_services ;;
-            9) system_info ;;
+            9) manage_udp ;;
+            10) system_info ;;
             10) install_required_services ;;
             11) backup_system ;;
             12) restore_backup ;;
